@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -58,13 +59,27 @@ public class UserController {
         );
     }
 
-    // PENDING ENDPOINT
+    // PENDING ENDPOINTS
     @GetMapping("/{userId}/connections/pending")
     public ResponseEntity<List<UserResponse>> getPendingConnections(
             @PathVariable String userId
     ) {
         return ResponseEntity.ok(userService.getPendingConnections(userId));
     }
+
+    @PostMapping("/{userId}/profile-photo")
+    public ResponseEntity<UserResponse> uploadProfilePhoto(
+            @PathVariable String userId,
+            @RequestHeader("X-User-Id") String requestingUserId,
+            @RequestParam("file")MultipartFile file
+            ) {
+        if (!userId.equals(requestingUserId)) {
+            return ResponseEntity.status(403).build();
+        }
+
+        return ResponseEntity.ok(userService.uploadProfilePhoto(userId, file));
+    }
+
 
     /**
      * Send connection request

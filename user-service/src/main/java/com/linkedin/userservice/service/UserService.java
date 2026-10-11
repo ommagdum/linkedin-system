@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ public class UserService {
 
     private final ConnectionRepository connectionRepository;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private static final String CONNECTION_REQUESTED_TOPIC = "connection.requested";
@@ -154,5 +156,19 @@ public class UserService {
         return connections.stream()
                 .map(c -> getUserProfile(c.getReceiverId()))
                 .collect(Collectors.toList());
+    }
+
+    public UserResponse uploadProfilePhoto(String userId, MultipartFile file) {
+
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new RuntimeException("User not found: " + userId)
+        );
+
+        String photoUrl = s3Service.uploadFile(file, "profiles/" + userId + "/avatar");
+        user.setProfilePhotoUrl(photoUrl);
+        User savedUser = userRepository.save(user);
+
+        log.info("User uploaded profile photo: {}", savedUser.getId());
+        return mapToResponse(savedUser);
     }
 }
