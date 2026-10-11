@@ -27,6 +27,7 @@ public class UserService {
 
     private static final String CONNECTION_REQUESTED_TOPIC = "connection.requested";
     private static final String CONNECTION_ACCEPTED_TOPIC = "connection.accepted";
+    private static final String USER_UPDATED_TOPIC = "user.updated";
 
     public String sendConnectionRequest(String receiverId, String requestorId) {
 
@@ -110,5 +111,48 @@ public class UserService {
         response.setCreatedAt(user.getCreatedAt());
 
         return response;
+    }
+
+    public UserResponse updateProfile(String userId, UserResponse userResponse) {
+
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new RuntimeException("User not found: " + userId)
+        );
+
+        user.setHeadLine(userResponse.getHeadLine());
+        user.setAbout(userResponse.getAbout());
+        user.setLocation(userResponse.getLocation());
+        user.setSkills(userResponse.getSkills());
+        user.setProfilePhotoUrl(userResponse.getProfilePhotoUrl());
+        user.setCoverPhotoUrl(userResponse.getCoverPhotoUrl());
+        user.setRole(userResponse.getRole());
+
+        User savedUser = userRepository.save(user);
+
+        // Publish user.updated event
+        Map<String, Object> userUpdateEvent = new HashMap<>();
+        userUpdateEvent.put("userId", savedUser.getId());
+        userUpdateEvent.put("firstName", user.getFirstName());
+        userUpdateEvent.put("lastName", user.getLastName());
+        userUpdateEvent.put("headLine", user.getHeadLine());
+        userUpdateEvent.put("about", user.getAbout());
+        userUpdateEvent.put("location", user.getLocation());
+        userUpdateEvent.put("profilePhotoUrl", user.getProfilePhotoUrl());
+        userUpdateEvent.put("coverPhotoUrl", user.getCoverPhotoUrl());
+        userUpdateEvent.put("skills", user.getSkills());
+
+        kafkaTemplate.send(USER_UPDATED_TOPIC, savedUser.getId(), userUpdateEvent);
+
+        log.info("User updated event published: {}", savedUser.getId());
+
+        return mapToResponse(savedUser);
+    }
+
+    public List<UserResponse> getPendingConnections(String userId) {
+        List<Connection> connections = connectionRepository.findByRequestorIdAndStatus(userId, ConnectionStatus.PENDING);
+
+        return connections.stream()
+                .map(c -> getUserProfile(c.getReceiverId()))
+                .collect(Collectors.toList());
     }
 }

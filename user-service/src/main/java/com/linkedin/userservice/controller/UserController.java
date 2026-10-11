@@ -38,7 +38,7 @@ public class UserController {
 
     /**
      * Update own profile
-     * user can only update there own profile
+     * user can only update their own profile
      * @param userId
      * @param requestingUserId
      * @return
@@ -46,18 +46,25 @@ public class UserController {
     @PutMapping("/{userId}/profile")
     public ResponseEntity<UserResponse> updateProfile(
             @PathVariable String userId,
-            @RequestHeader("X-User-Id") String requestingUserId
+            @RequestHeader("X-User-Id") String requestingUserId,
+            @RequestBody UserResponse userResponse
     ) {
         if (!userId.equals(requestingUserId)) {
             return ResponseEntity.status(403).build();
         }
 
         return ResponseEntity.ok(
-                userService.updateProfile(userId, requestingUserId)
+                userService.updateProfile(userId, userResponse)
         );
     }
 
     // PENDING ENDPOINT
+    @GetMapping("/{userId}/connections/pending")
+    public ResponseEntity<List<UserResponse>> getPendingConnections(
+            @PathVariable String userId
+    ) {
+        return ResponseEntity.ok(userService.getPendingConnections(userId));
+    }
 
     /**
      * Send connection request
