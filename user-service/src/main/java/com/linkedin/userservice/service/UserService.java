@@ -137,10 +137,7 @@ public class UserService {
         userUpdateEvent.put("firstName", user.getFirstName());
         userUpdateEvent.put("lastName", user.getLastName());
         userUpdateEvent.put("headLine", user.getHeadLine());
-        userUpdateEvent.put("about", user.getAbout());
         userUpdateEvent.put("location", user.getLocation());
-        userUpdateEvent.put("profilePhotoUrl", user.getProfilePhotoUrl());
-        userUpdateEvent.put("coverPhotoUrl", user.getCoverPhotoUrl());
         userUpdateEvent.put("skills", user.getSkills());
 
         kafkaTemplate.send(USER_UPDATED_TOPIC, savedUser.getId(), userUpdateEvent);
